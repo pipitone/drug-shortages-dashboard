@@ -13,7 +13,6 @@ library(tidyverse)
 library(lubridate, warn.conflicts=F)
 library(devtools, quietly=T)
 library(drugshortagesr)
-library(svglite)
 library(kableExtra, warn.conflicts=F)
 
 # settings
