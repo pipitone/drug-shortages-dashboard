@@ -2,8 +2,7 @@
 title: "Assessing Canada’s Drug Shortage Problem"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
-    vertical_layout: fill
+    orientation: rows
     source_code: embed
 ---
 
@@ -12,12 +11,15 @@ library(flexdashboard)
 library(tidyverse, warn.conflicts = FALSE)
 library(lubridate)
 library(devtools)
-#library(drugshortagesr)
+library(drugshortagesr)
+library(svglite)
+library(kableExtra)
 
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
-DPD_DATA_DIR = 'data/dpd/'  # Load the Health Canada Drug Product Database
-DPD_DOWNLOAD = FALSE        # download the latest drug product database dataset
+DPD_DATA_DIR = 'data/'  # Load the Health Canada Drug Product Database
+DPD_DOWNLOAD = F # download the latest drug product database dataset
+DSC_DOWNLOAD = F # download latest DSC database
 DSC_PATH     = 'data/dsc.csv'
 FAR_FUTURE   = parse_datetime("2100-12-31")
 FAR_PAST     = parse_datetime("1970-01-01")
@@ -31,8 +33,8 @@ caption = list(labs(caption =  paste(
     sep="\n")))
 
 # load data
-if (F) { 
-  dsc = dsc_search(term="venla")  %>%
+if (DSC_DOWNLOAD) { 
+  dsc = dsc_search()  %>%
     select_if(~ !is.list(.x)) %>%
     write_csv(DSC_PATH)
 }
@@ -124,18 +126,92 @@ dsc = inner_join(dpd$drug, dpd$ther, by="DRUG_CODE") %>%
   distinct() %>%
   right_join(dsc, by=c("din"))
 dsc.shortages = dsc %>% filter(type.label == "shortage")
+dsc.discontinuations = dsc %>% filter(type.label == "discontinuance")
+
+this_year = interval(floor_date(now(), "year"), ceiling_date(now(), "year"))
+week_start = floor_date(now(), "week")
+this_week = interval(week_start, week_start + weeks(1))
+next_week = int_shift(this_week, by = weeks(1))
 ```
 
 Shortages
 ==========
 
-Column
+Row {data-height=125}
+--------------------------------
+
+### Active shortages this week
+```{r}
+.active_shortages = dsc.shortages %>% 
+  filter(
+    status == "active_confirmed", 
+    now() %within% interval(actual_start_date, end_date_no_na))
+shortages = nrow(.active_shortages)
+valueBox(shortages, 
+         icon="fa-capsules", 
+         color = ifelse(shortages>0, "warning", "primary"))
+```
+
+### New shortages this week
+```{r}
+.shortages_this_week =  dsc.shortages %>% 
+  filter(
+    status %in% c("active_confirmed", "anticipated_shortage"), 
+    coalesce(actual_start_date, anticipated_start_date) %within% this_week)
+valueBox(nrow(.shortages_this_week),icon="fa-needle")
+```
+
+### New discontinuations this week
+```{r}
+.active_disconts = dsc.discontinuations  %>% 
+  filter(
+    status == "discontinued", 
+    discontinuation_date %within% this_week)
+valueBox(nrow(.active_disconts), icon="fa-ban")
+```
+
+### Shortages of Essential Medicines this year
+```{r}
+.emls_with_shortages = dsc.shortages %>%
+  filter(actual_start_date %within% this_year) %>%
+  right_join(eml, by=c("dpd_atc_number" = "ATC"))  %>%
+  filter(!is.na(din))  %>%
+  group_by(category, medication, dpd_atc_number)
+valueBox(nrow(.emls_with_shortages), icon="fa-ambulance")
+```
+
+
+
+Row
 -----------------------------------------------------------------------
 
-### Total number of drugs in shortage over time
+### Upcoming new and anticipated shortages
 ```{r}
+options(knitr.kable.NA = '')
+
+dsc.shortages %>% 
+  mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date))) %>%
+  filter(status %in% c("active_confirmed", "anticipated_shortage"), 
+         start_date %within% interval(week_start, week_start + dweeks(2)))  %>%
+  arrange(start_date) %>%
+  mutate(duration = round((start_date %--% estimated_end_date)/days(1)),
+         start_date = format(start_date, "%b %d, %Y"),
+         status = fct_recode(status, "Active" = "active_confirmed", "Anticipated" = "anticipated_shortage"), 
+         link = text_spec(id, link=paste0("https://www.drugshortagescanada.ca/shortage/", id))) %>%
+  select(en_drug_brand_name, drug_strength, status, start_date, duration, reason, link) %>%
+  kable(col.names = c("Drug Name", "Dose", "Status", "Start", "Duration (days)", "Reason", "View report"), escape=F) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+    full_width=F) %>%
+    column_spec(3, width="9em")
+```
+
+Row {data-height=300} 
+----------------------------------
+### Drugs in shortage
+```{r, fig.height=3}
 time.by.month = tibble(
-  month.start = seq(parse_date("2017-01-01"), parse_date("2020-02-01"), by = "1 month"), 
+  month.start = seq(parse_date("2017-03-01"), parse_date("2020-01-01"), by = "1 month"), 
   month.end   = month.start + months(1) - days(1),
   i = 1
 )
@@ -145,169 +221,36 @@ shortages.by.month =  dsc.shortages %>%
   filter(int_overlaps(
     interval(month.start, month.end),
     interval(floor_date(actual_start_date, "month"), end_date_no_na))) %>%
+#    (month.start - as_date(actual_start_date)) / dyears(1) < 2) 
   group_by(month.start) %>%
   summarize(n = n())
 
 ggplot(shortages.by.month, aes(x = month.start, y = n)) + 
   geom_point() + geom_line() + 
-  labs(x = "Date", y = "Number of drugs in shortage") + 
-  caption
-ggsave(filename="shortages-total.svg", width=6, height=4)j
+  labs(x = "Date", y = NULL)
 ```
 
-### Shortage start date
 
-```{r, fig.asp=0.70}
+### Causes of drug shortages this year
+```{r, asp=.5}
 dsc.shortages %>% 
-  mutate(Month = floor_date(actual_start_date, "month")) %>% 
-  filter(between(actual_start_date, parse_datetime("2017-01-01"), parse_datetime("2020-01-01")), 
-         status != "avoided_shortage") %>%
-  group_by(Month, status) %>% 
-  summarize(count = n()) %>%
-  ggplot(aes(x=Month, y = count, color = status)) + 
-    geom_point() + geom_line() +  
-    #geom_col(position="stack") + 
-    scale_x_datetime(
-      date_breaks = "1 year", 
-      date_labels = "%Y") + 
-    theme(legend.position="bottom") +
-    labs(x = "Shortage start date", y = "Number of shortages", fill = "Current status") + 
-    caption
-ggsave("shortages-by-date.svg", height=6, width=8)
-```
-
-Column 
------------------------------------------------------------------------
-
-### Duration of shortages
-```{r}
-data = dsc.shortages %>%
-  mutate(duration = interval(actual_start_date, actual_end_date)/weeks(1), 
-         year = year(actual_start_date)) %>%
-  filter(duration > 0, between(year, 2017, 2019))
-
-data %>%
-  ggplot(aes(x = ceiling(duration))) + 
-    geom_histogram(bins=50, position="identity") + 
-    facet_grid(. ~ year) + 
-    labs(fill = "Year", x = "Duration (weeks)", y = "# of shortages") + 
-    theme(legend.position = "none") + 
-    caption
-ggsave(filename="duration.svg", width=6, height=4)
-```
-
-
-### Causes of drug shortages
-
-```{r, fig.asp=0.70}
-dsc.shortages %>% 
+  filter(actual_start_date %within% this_year) %>% 
   mutate(reason=fct_infreq(reason)) %>%
   group_by(reason) %>%
   summarize(shortages=n()) %>%
   mutate(percent=shortages/sum(shortages)*100) %>% 
-  ggplot(aes(x=2,y=percent,fill=reason)) + 
-  xlim(0.5,2.5) + 
-  geom_bar(width=1,stat="identity") + 
-  coord_polar("y") + 
-  geom_text(aes(label = paste0(round(percent), "%")), position = position_stack(vjust = 0.5), size=3) +
-  labs(x=NULL,y=NULL,fill=NULL,
-       title="Causes of drug shortages") + 
+  ggplot(aes(y=percent,fill=reason)) + 
+  xlim(0,3) + 
+  geom_bar(aes(x=2.5), width=.5,stat="identity") + 
+  coord_polar("y", clip="off") + 
+  geom_text(aes(x=1.8, label = paste0(round(percent), "%")), position = position_stack(vjust = 0.5), size=4, check_overlap = T) +
+  labs(x=NULL,y=NULL,fill=NULL) + 
   theme_classic() + 
   theme(
     axis.line=element_blank(), 
     axis.text=element_blank(), 
-    axis.ticks=element_blank()) +
-  caption
-ggsave(filename="shortages-reason.svg", width=6, height=4)
+    axis.ticks=element_blank())
 ```
-
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Active shortages
-```{r}
-.active_shortages = dsc.shortages %>% 
-  filter(
-    status == "active_confirmed", 
-    now() %within% interval(actual_start_date, end_date_no_na))
-valueBox(nrow(.active_shortages), icon="fa-capsules")
-```
-
-### Anticipated shortages next week
-```{r}
-week_start = floor_date(now(), "week")
-this_week = interval(week_start, week_start + weeks(1))
-next_week = int_shift(this_week, by = weeks(1))
-expected_shortages = dsc.shortages %>% 
-  filter(
-    int_overlaps(next_week, interval(actual_start_date, end_date_no_na)))
-valueBox(nrow(expected_shortages), icon="fa-clock")
-```
-
-### Summary (via the database)
-
-```{r}
-knitr::kable(dsc %>% group_by(status) %>% summarize(n = n()))
-```
-
-
-Essential Medicines 
-=======================
-
-Column 
------------------
-
-### Essential medicines impacted by shortages in 2019
-```{r}
-emls_with_shortages = dsc.shortages %>%
-  filter(int_overlaps("2019-01-01" %--% "2019-12-31", actual_start_date %--% end_date_no_na)) %>%
-  right_join(eml, by=c("dpd_atc_number" = "ATC"))  %>%
-  filter(!is.na(din))  %>%
-  group_by(category, medication, dpd_atc_number) %>%
-  summarize(Shortages = n()) %>%
-  rename(Category = category, 
-         Medication = medication,
-         ATC = dpd_atc_number) %>%
-  arrange(desc(Shortages))
-knitr::kable(emls_with_shortages)
-```
-
-### All 2019 shortages by EML category
-```{r}
-shortages_by_eml = dsc.shortages %>%
-  filter(int_overlaps("2019-01-01" %--% "2019-12-31", actual_start_date %--% end_date_no_na)) %>%
-  left_join(eml, by=c("dpd_atc_number" = "ATC")) %>%
-  mutate(category = replace_na(category, "Not an essential medicine")) %>%
-  mutate(category = str_replace(category, " -.*", "")) %>%
-  group_by(category) %>%
-  summarize(Shortages = n()) %>%
-  mutate(percent_shortages = round(Shortages/sum(Shortages) * 100, digits=2)) %>%
-  arrange(desc(percent_shortages)) %>%
-  rename(Category = category, 
-         "% of all shortages" = percent_shortages)
-knitr::kable(shortages_by_eml)
-```
-
-Column {data-width=250}
------------------------------------------------------------------------
-
-### Shortages of Essential Medicines in 2019
-```{r}
-valueBox(nrow(emls_with_shortages), icon="fa-ambulance")
-```
-
-### Of all shortages in 2019
-```{r}
-.not_eml_percent = shortages_by_eml %>% 
-  filter(Category == "Not an essential medicine") %>% 
-  pluck("% of all shortages", 1)
-
-valueBox(
-  paste0(100-.not_eml_percent, "%"),
-  icon="fa-chart-pie")
-```
-
-
 
 
 
@@ -321,7 +264,7 @@ Column
 
 Hello. I am Jon Pipitone, medical student at Queen's University, Kingston, Ontario, Canada.
 
-This website is a work-in-progress and is a place to display my ongoing research into drug shortages in Canada. You can follow my progress on my blog https://jon.pipitone.ca/blog. 
+This website is a dashboard to display my ongoing research into drug shortages in Canada. You can follow my progress on my blog https://jon.pipitone.ca/blog. 
 
 This work is done under supervision by [Dr. Jacalyn Duffin](https://jacalynduffin.ca/), and is an extension of our earlier analysis: 
 
@@ -352,7 +295,4 @@ Database of historical records of drug products in Canada. Maintained by Health 
 **DPD**: Health Canada's Drug Products Database
 
 **ATC**: Anatomical Therapeutic Chemical Classification system
-
-
-
 
