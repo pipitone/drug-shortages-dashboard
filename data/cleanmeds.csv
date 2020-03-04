@@ -1,0 +1,137 @@
+medication,ATC,category
+Abacavir,J05AF06,Antiinfectives - HIV
+Acetaminophen,N02BE01,Neurological - Other
+Acetylsalicylic acid,N02BA01,Neurological - Other
+Adalimumab,L04AB04,Immunomodulating - Inflammatory
+Alendronate,M05BA04,Musculo-skeletal - Osteoporosis
+Allopurinol,M04AA01,Musculo-skeletal - Other
+Amiodarone,C01BD01,Cardiovascular - Other
+Amlodipine,C08CA01,Cardiovascular - Antihypertensives
+Amoxicillin,J01CA04,Antiinfectives - Antibiotics
+Amoxicillin/ clavulanic acid,J01CR02,Antiinfectives - Antibiotics
+Atomoxetine,N06BA09,Neurological - ADHD
+Atorvastatin,C10AA05,Cardiovascular - Cholesterol
+Azathioprine,L04AX01,Immunomodulating - Other
+Azithromycin,J01FA10,Antiinfectives - Antibiotics
+Baclofen,M03BX01,Musculo-skeletal - Other
+Beclomethasone,R03BA01,Respiratory - Airway
+Benzoyl peroxide,D10AE01,Dermatological
+Benztropine,N04AC01,Neurological - Other
+Betamethasone,D07AC01,Dermatological
+Bevacizumab,L01XC07,Antineoplastic - Other
+Bisoprolol,C07AB07,Cardiovascular - Antihypertensives
+Budesonide,R01AD05,Respiratory - Other
+Candesartan,C09CA06,Cardiovascular - Antihypertensives
+Carbamazepine,N03AF01,Neurological - Other
+Cephalexin,J01DB01,Antiinfectives - Antibiotics
+Cetirizine,R06AE07,Respiratory - Other
+Chlorthalidone,C03BA04,Cardiovascular - Antihypertensives
+Ciprofloxacin,J01MA02,Antiinfectives - Antibiotics
+Clarithromycin,J01FA09,Antiinfectives - Antibiotics
+Clindamycin,J01FF01,Antiinfectives - Antibiotics
+Clopidogrel,B01AC04,Blood - Antiplatelets
+Clotrimazole,D01AC01,Dermatological
+Cloxacillin,J01CF02,Antiinfectives - Antibiotics
+Clozapine,N05AH02,Neurological - Antipsychotics
+Conjugated estrogens,G03CA57,Genito-urinary - HRT
+Dabigatran etexilate,B01AE07,Blood - Anticoagulants
+Dexamethasone,H02AB02,Hormonal - Other
+Diazepam,N05BA01,Neurological - Benzodiazepines
+Diltiazem,C08DB01,Cardiovascular - Antihypertensives
+Dolutegravir,J05AX12,Antiinfectives - Antivirals
+Domperidone,A03FA03,Alimentary - Other
+Donepezil,N06DA02,Neurological - Dementia
+Doxycycline,A01AB22,Alimentary - Other
+Efavirenz,J05AG03,Antiinfectives - HIV
+Efavirenz/ emtricitabine/ tenofovir,J05AR06,Antiinfectives - HIV
+Eletriptan,N02CC06,Neurological - Migraine
+Emtricitabine,J05AF09,Antiinfectives - HIV
+Epinephrine,C01CA24,Cardiovascular - Other
+Estradiol (17β-estradiol),G03CA03,Genito-urinary - HRT
+Ethinyl estradiol,G03FA01,Genito-urinary - HRT
+Ethinylestradiol/ levonorgestrel,G03AA07,Genito-urinary - Contraception
+Ferrous fumarate,B03AA02,Blood - Antianemic
+Finasteride,G04CB01,Genito-urinary - BPH
+Fluconazole,J02AC01,Antiinfectives - Other
+Fluoxetine,N06AB03,Neurological - Antidepressants
+Fluticasone,R03BA05,Respiratory - Airway
+Folic acid,B03BB01,Blood - Other
+Furosemide,C03CA01,Cardiovascular - Other
+Fusidic acid,D06AX01,Dermatological
+Gabapentin,N03AX12,Neurological - Gabapentin
+Gliclazide,A10BB09,Alimentary - Non-insulin
+Haloperidol,N05AD01,Neurological - Antipsychotics
+Hydrocortisone,D07AA02,Dermatological
+Hydromorphone,N02AA03,Neurological - Opioids
+Hydroxychloroquine,P01BA02,Antiparasitic
+Ibuprofen,M01AE01,Musculo-skeletal - NSAIDs
+"Insulin, long acting",A10AE04,Alimentary - Insulins
+"Insulin, short acting",A10AB05,Alimentary - Insulins
+Ipratropium,R03BB01,Respiratory - Airway
+Labetalol,C07AG01,Cardiovascular - Antihypertensives
+Lamivudine,J05AF05,Antiinfectives - Antivirals
+Latanoprost,S01EE01,Sensory - Glaucoma
+Levodopa/carbidopa,N04BA02,Neurological - Other
+Levofloxacin,J01MA12,Antiinfectives - Antibiotics
+Levonorgestrel  ‐ releasing implant,G03AC03,Genito-urinary - Contraception
+Levothyroxine,H03AA01,Hormonal - Thyroid
+Lithium,N05AN01,Neurological - Antipsychotics
+Loperamide,A07DA03,Alimentary - Antidiarrhoeal
+Medroxyprogesterone,G03AC06,Genito-urinary - Contraception
+Metformin,A10BA02,Alimentary - Non-insulin
+Methadone,N07BC02,Neurological - Other
+Methimazole,H03BB02,Hormonal - Other
+Methotrexate,L04AX03,Immunomodulating - Inflammatory
+Methylprednisolone,H02AB04,Hormonal - Other
+Metoclopramide,A03FA01,Alimentary - Other
+Metronidazole,J01XD01,Antiinfectives - Antibiotics
+Morphine,N02AA01,Neurological - Opioids
+Mupirocin,D06AX09,Dermatological
+Naltrexone,N07BB04,Neurological - Other
+Naproxen,M01AE02,Musculo-skeletal - NSAIDs
+Nicotine replacement therapy,N07BA01,Neurological - Other
+Nitrofurantoin,J01XE01,Antiinfectives - Antibiotics
+Nitroglycerin,C01DA02,Cardiovascular - Other
+Nortriptyline,N06AA10,Neurological - Antidepressants
+Nystatin,D01AA01,Dermatological
+Olopatadine,S01GX09,Sensory - Other
+Pantoprazole,A02BC02,Alimentary - Acid
+Permethrin,P03AC04,Antiparasitic - Topical
+Phenytoin,N03AB02,Neurological - Other
+Pilocarpine,S01EB01,Sensory - Glaucoma
+Polyethylene glycol 3350,A06AD65,Alimentary - Other
+Polymyxin B,S01AA18,Sensory - Other
+Potassium,A12BA01,Alimentary - Other
+Pravastatin,C10AA03,Cardiovascular - Cholesterol
+Prednisone,H02AB07,Hormonal - Other
+Propylthiouracil,H03BA02,Hormonal - Other
+Ramipril,C09AA05,Cardiovascular - Antihypertensives
+Ranitidine,A02BA02,Alimentary - Acid
+Risperidone,N05AX08,Neurological - Antipsychotics
+Rivaroxaban,B01AF01,Blood - Other
+Salbutamol,R03AC02,Respiratory - Airway
+Salicylic acid,D01AE12,Dermatological
+Salmeterol,R03AC12,Respiratory - Airway
+Salmeterol/fluticasone,R03AK06,Respiratory - Airway
+Senna,A06AB06,Alimentary - Other
+Sertraline,N06AB06,Neurological - Antidepressants
+Spironolactone,C03DA01,Cardiovascular - Other
+Sulfamethoxazole/ trimethoprim,J01EE20,Antiinfectives - Antibiotics
+Sulfasalazine,A07EC01,Alimentary - Other
+Tadalafil,G04BE08,Genito-urinary - ED
+Tamsulosin,G04CA02,Genito-urinary - BPH
+Tenofovir disoproxil fumarate,J05AF07,Antiinfectives - HIV
+Testosterone,G03BA03,Genito-urinary - Androgens
+Thiamine,A11DA01,Alimentary - Other
+Tiotropium,R03BB04,Respiratory - Airway
+Tranexamic acid,B02AA02,Blood - Other
+Tretinoin,D10AD01,Dermatological
+Trimethoprim,J01EA01,Antiinfectives - Antibiotics
+Urea,D02AE01,Dermatological
+Vaginal ring eluting etonogestrel and ethinyl estradiol,G02BB01,Genito-urinary - Contraception
+Valacyclovir,J05AB11,Antiinfectives - Other
+Valproic acid,N03AG01,Neurological - Other
+Varenicline,N07BA03,Neurological - Other
+Vitamin B12,B03BA01,Blood - Other
+Vitamin D,A11CC01,Alimentary - Other
+Warfarin,B01AA03,Blood - Anticoagulants

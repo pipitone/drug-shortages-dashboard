@@ -6,3 +6,4 @@ packrat/bundles/
 .RData
 data/
 *.html
+.Rprofile

@@ -7,19 +7,20 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+options(tidyverse.quiet=T)
 library(flexdashboard)
-library(tidyverse, warn.conflicts = FALSE)
-library(lubridate)
-library(devtools)
+library(tidyverse)
+library(lubridate, warn.conflicts=F)
+library(devtools, quietly=T)
 library(drugshortagesr)
 library(svglite)
-library(kableExtra)
+library(kableExtra, warn.conflicts=F)
 
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
 DPD_DATA_DIR = 'data/'  # Load the Health Canada Drug Product Database
-DPD_DOWNLOAD = F # download the latest drug product database dataset
-DSC_DOWNLOAD = F # download latest DSC database
+DPD_DOWNLOAD = getOption('dpd_download', default=T) # download the latest drug product database dataset
+DSC_DOWNLOAD = getOption('dsc_download', default=T) # download latest DSC database
 DSC_PATH     = 'data/dsc.csv'
 FAR_FUTURE   = parse_datetime("2100-12-31")
 FAR_PAST     = parse_datetime("1970-01-01")
@@ -38,9 +39,11 @@ if (DSC_DOWNLOAD) {
     select_if(~ !is.list(.x)) %>%
     write_csv(DSC_PATH)
 }
-
 dsc = read_csv(DSC_PATH, trim_ws = T, col_types = cols(
   status = col_factor(),
+  drug.company.post_office_box = col_character(),
+  hc_en_comments = col_character(), 
+  hc_fr_comments = col_character(),
   shortage_reason.en_reason = col_factor()
   )) %>%
   select(-matches("^fr_|\\.fr_|_fr")) %>%
@@ -68,7 +71,7 @@ eml = read_csv('data/cleanmeds.csv', trim_ws=T, col_types = cols()) %>%
 if(DPD_DOWNLOAD) {
   for (f in c('allfiles.zip', 'allfiles_ia.zip', 'allfiles_ap.zip', 'allfiles_dr.zip')) {
     destfile = paste0(DPD_DATA_DIR, f)
-    download.file(paste0(DPD_URL_BASE, f), destfile)
+    download.file(paste0(DPD_URL_BASE, f), destfile, quiet=T)
     unzip(destfile, exdir = DPD_DATA_DIR)
   }
 }
