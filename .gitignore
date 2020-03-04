@@ -1,2 +1,8 @@
 packrat/lib*/
 .Rproj.user
+packrat/bundles/
+.Renviron
+.Rhistory
+.RData
+data/
+*.html
