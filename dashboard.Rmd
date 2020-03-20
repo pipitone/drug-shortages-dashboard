@@ -19,8 +19,8 @@ library(kableExtra, warn.conflicts=F)
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
 DPD_DATA_DIR = 'data/'  # Load the Health Canada Drug Product Database
-DPD_DOWNLOAD = getOption('dpd_download', default=F) # download the latest drug product database dataset
-DSC_DOWNLOAD = getOption('dsc_download', default=F) # download latest DSC database
+DPD_DOWNLOAD = getOption('dpd_download', default=T) # download the latest drug product database dataset
+DSC_DOWNLOAD = getOption('dsc_download', default=T) # download latest DSC database
 DSC_PATH     = 'data/dsc.csv'
 DSC_START    = ymd("2017-03-01", tz="EST")
 FAR_FUTURE   = ymd("2100-12-31", tz="EST")
