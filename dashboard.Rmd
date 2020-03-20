@@ -14,15 +14,17 @@ library(lubridate, warn.conflicts=F)
 library(devtools, quietly=T)
 library(drugshortagesr)
 library(kableExtra, warn.conflicts=F)
+#library(plotly)
 
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
 DPD_DATA_DIR = 'data/'  # Load the Health Canada Drug Product Database
-DPD_DOWNLOAD = getOption('dpd_download', default=T) # download the latest drug product database dataset
-DSC_DOWNLOAD = getOption('dsc_download', default=T) # download latest DSC database
+DPD_DOWNLOAD = getOption('dpd_download', default=F) # download the latest drug product database dataset
+DSC_DOWNLOAD = getOption('dsc_download', default=F) # download latest DSC database
 DSC_PATH     = 'data/dsc.csv'
-FAR_FUTURE   = parse_datetime("2100-12-31")
-FAR_PAST     = parse_datetime("1970-01-01")
+DSC_START    = ymd("2017-03-01", tz="EST")
+FAR_FUTURE   = ymd("2100-12-31", tz="EST")
+FAR_PAST     = origin
 
 theme_set(theme_minimal())
 caption = list(labs(caption =  paste(
@@ -212,46 +214,53 @@ Row {data-height=300}
 ----------------------------------
 ### Drugs in shortage
 ```{r, fig.height=3}
-time.by.month = tibble(
-  month.start = seq(parse_date("2017-03-01"), parse_date("2020-01-01"), by = "1 month"), 
-  month.end   = month.start + months(1) - days(1),
+months = tibble(
+  month.start = seq(DSC_START, floor_date(now(), "month"), by = "1 month"), 
   i = 1
 )
-shortages.by.month =  dsc.shortages %>%
+dsc.shortages %>%
   mutate(i = 1) %>%
-  full_join(time.by.month, by = "i") %>%
-  filter(int_overlaps(
-    interval(month.start, month.end),
-    interval(floor_date(actual_start_date, "month"), end_date_no_na))) %>%
-#    (month.start - as_date(actual_start_date)) / dyears(1) < 2) 
+  full_join(months, by = "i") %>%
+  filter(month.start %within% interval(actual_start_date, end_date_no_na)) %>%
   group_by(month.start) %>%
-  summarize(n = n())
-
-ggplot(shortages.by.month, aes(x = month.start, y = n)) + 
+  summarize(n = n()) %>%
+  ggplot( aes(x = month.start, y = n)) + 
   geom_point() + geom_line() + 
-  labs(x = "Date", y = NULL)
+  labs(x = NULL, y = NULL)  
 ```
 
 
-### Causes of drug shortages this year
-```{r, asp=.5}
-dsc.shortages %>% 
+### Causes of drug shortages this year {.no-padding}
+```{r, fig.height=4, asp=0.6}
+p = dsc.shortages %>% 
   filter(actual_start_date %within% this_year) %>% 
   mutate(reason=fct_infreq(reason)) %>%
   group_by(reason) %>%
   summarize(shortages=n()) %>%
   mutate(percent=shortages/sum(shortages)*100) %>% 
-  ggplot(aes(y=percent,fill=reason)) + 
-  xlim(0,3) + 
+  ggplot(aes(y=percent,fill=reason,hjust="left")) + 
+  xlim(1,4) + 
   geom_bar(aes(x=2.5), width=.5,stat="identity") + 
-  coord_polar("y", clip="off") + 
-  geom_text(aes(x=1.8, label = paste0(round(percent), "%")), position = position_stack(vjust = 0.5), size=4, check_overlap = T) +
+  geom_text(
+    aes(x=2.1, label = paste0(round(percent), "%")), 
+    position = position_stack(vjust = 0.5), 
+    size=4, 
+    check_overlap = T) +
+  geom_text(
+    aes(x=2.9, label = reason, angle=30), 
+    position = position_stack(vjust = .5), 
+    size=4, 
+    check_overlap = T) +
+  coord_flip() + 
   labs(x=NULL,y=NULL,fill=NULL) + 
   theme_classic() + 
   theme(
+    legend.position = "none", 
+    text = element_text(size=15),
     axis.line=element_blank(), 
     axis.text=element_blank(), 
-    axis.ticks=element_blank())
+    axis.ticks=element_blank()) 
+p
 ```
 
 

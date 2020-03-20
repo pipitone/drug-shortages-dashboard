@@ -1,4 +1,4 @@
 #!/bin/bash
-Rscript -e "rmarkdown::render('dashboard.Rmd', quiet=T)"
+Rscript -e "options("dsc_download"=T, "dpd_download"=T); rmarkdown::render('dashboard.Rmd', quiet=T)"
 rsync -a dashboard.html \
     pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/index.html
