@@ -1,4 +1,11 @@
 #!/bin/bash
-Rscript -e "options("dsc_download"=T, "dpd_download"=T); rmarkdown::render('dashboard.Rmd', quiet=T)"
-rsync -a dashboard.html \
-    pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/index.html
+set -euo pipefail
+SCRIPTDIR=$HOME/scratch/drug-shortages-dashboard
+
+cd $SCRIPTDIR;
+{
+  echo "Begin: $(date)";
+  Rscript -e "options('dsc_download'=F, 'dpd_download'=F); rmarkdown::render('dashboard.Rmd', quiet=T)";
+  rsync -a dashboard.html pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/index.html;
+  echo "End: $(date)";
+} &>> run.log
