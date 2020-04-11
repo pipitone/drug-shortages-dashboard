@@ -12,18 +12,19 @@ library(flexdashboard)
 library(tidyverse)
 library(lubridate, warn.conflicts=F)
 library(devtools, quietly=T)
-library(drugshortagesr)
+library(drugshortagesr)     # devtools::install_github('pipitone/drugshortagesr')
 library(kableExtra, warn.conflicts=F)
-#library(plotly)
+library(plotly)
+library(svglite)
 
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
 DPD_DATA_DIR = 'data/'  # Load the Health Canada Drug Product Database
-DPD_DOWNLOAD = getOption('dpd_download', default=T) # download the latest drug product database dataset
-DSC_DOWNLOAD = getOption('dsc_download', default=T) # download latest DSC database
+DPD_DOWNLOAD = getOption('dpd_download', default=F) # download the latest drug product database dataset
+DSC_DOWNLOAD = getOption('dsc_download', default=F) # download latest DSC database
 DSC_PATH     = 'data/dsc.csv'
-DSC_START    = ymd("2017-03-01", tz="EST")
-FAR_FUTURE   = ymd("2100-12-31", tz="EST")
+DSC_START    = ymd("2018-01-01", tz="")
+FAR_FUTURE   = ymd("2100-12-31", tz="")
 FAR_PAST     = origin
 
 theme_set(theme_minimal())
@@ -40,7 +41,7 @@ if (DSC_DOWNLOAD) {
     select_if(~ !is.list(.x)) %>%
     write_csv(DSC_PATH)
 }
-dsc = read_csv(DSC_PATH, trim_ws = T, col_types = cols(
+dsc.orig = read_csv(DSC_PATH, trim_ws = T, col_types = cols(
   status = col_factor(),
   drug.company.post_office_box = col_character(),
   hc_en_comments = col_character(), 
@@ -126,9 +127,9 @@ for (table_name in names(.tables)) {
 
 ## Add the DPD ATC number to the DSC data
 dsc = inner_join(dpd$drug, dpd$ther, by="DRUG_CODE") %>% 
-  select(din = DRUG_IDENTIFICATION_NUMBER, dpd_atc_number = TC_ATC_NUMBER) %>% 
-  distinct() %>%
-  right_join(dsc, by=c("din"))
+  select(din = DRUG_IDENTIFICATION_NUMBER, dpd_atc_number = TC_ATC_NUMBER, TC_ATC) %>% 
+  distinct(din, .keep_all = TRUE) %>%
+  right_join(dsc.orig, by=c("din"))
 dsc.shortages = dsc %>% filter(type.label == "shortage")
 dsc.discontinuations = dsc %>% filter(type.label == "discontinuance")
 
@@ -215,7 +216,7 @@ Row {data-height=300}
 ### Drugs in shortage
 ```{r, fig.height=3}
 months = tibble(
-  month.start = seq(DSC_START, floor_date(now(), "month"), by = "1 month"), 
+  month.start = seq(DSC_START, floor_date(now(), "month"), by = "1 week"), 
   i = 1
 )
 dsc.shortages %>%
@@ -225,8 +226,9 @@ dsc.shortages %>%
   group_by(month.start) %>%
   summarize(n = n()) %>%
   ggplot( aes(x = month.start, y = n)) + 
-  geom_point() + geom_line() + 
-  labs(x = NULL, y = NULL)  
+  geom_point() + #geom_line() + 
+  expand_limits(y=0) + 
+  labs(x = NULL, y = NULL)
 ```
 
 
@@ -263,7 +265,42 @@ p = dsc.shortages %>%
 p
 ```
 
+COVID-19
+========
 
+
+### Shortages since March 2020
+```{r}
+dsc.shortages %>%
+  mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date))) %>%
+  filter(start_date %within% interval("2020-03-01", "2020-03-31")) %>% 
+  arrange(dpd_atc_number) %>%
+  mutate(duration = round((start_date %--% estimated_end_date)/days(1)),
+         start_date = format(start_date, "%b %d, %Y"),
+         status = fct_recode(status, "Active" = "active_confirmed", "Anticipated" = "anticipated_shortage"),
+         link = text_spec(id, link=paste0("https://www.drugshortagescanada.ca/shortage/", id))) %>%
+  select(dpd_atc_number, en_drug_brand_name, drug_strength, company_name, status, start_date, duration, reason, link) %>%
+  DT::datatable(escape=F, options = list(bPaginate = FALSE, 
+                                         autoWidth = FALSE,
+                                         rowid = FALSE), 
+                colnames = c("ATC", "Drug Name", "Dose", "Company", "Status", "Start", "Duration (days)", "Reason", "View report")) %>%
+  DT::formatStyle("start_date", "white-space"="nowrap")
+```
+
+### Shortage reasons, aggregated weekly {data-width=150}
+```{r, fig.height=10, fig.width=3}
+dsc.shortages %>%
+  transmute(started = floor_date(actual_start_date, "week"), 
+            reason = reason) %>%  
+  filter(started > ymd('2020-01-01'), started < now()) %>%
+  count(started, reason) %>%
+  group_by(started) %>%
+  mutate(perc = n / sum(n) * 100) %>%
+  ggplot(aes(x = started, y = perc)) + 
+  geom_bar(stat='identity') + 
+  labs(x=NULL, y="% of total") + 
+  facet_wrap(~reason, ncol=1, strip.position="bottom")
+```
 
 About
 =====
