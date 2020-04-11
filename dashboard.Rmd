@@ -15,7 +15,6 @@ library(devtools, quietly=T)
 library(drugshortagesr)     # devtools::install_github('pipitone/drugshortagesr')
 library(kableExtra, warn.conflicts=F)
 library(plotly)
-library(svglite)
 
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
