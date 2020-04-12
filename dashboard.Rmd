@@ -330,6 +330,9 @@ Column  {data-width=100}
 ----------------------------
 
 ### Data sources
+
+Last updated: `r now()`
+
 ##### [drugshortagescanada.ca](https://www.drugshortagescanada.ca)
 Database of shortage and discontinuation reports.  Active from March 2017 to
 present. Manufacturers are required to report.
