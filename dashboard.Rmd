@@ -14,7 +14,7 @@ library(lubridate, warn.conflicts=F)
 library(devtools, quietly=T)
 library(drugshortagesr)     # devtools::install_github('pipitone/drugshortagesr')
 library(kableExtra, warn.conflicts=F)
-library(plotly)
+library(plotly, warn.conflicts=F)
 
 # settings
 DPD_URL_BASE = 'https://www.canada.ca/content/dam/hc-sc/documents/services/drug-product-database/'
@@ -215,18 +215,19 @@ Row {data-height=300}
 ### Drugs in shortage
 ```{r, fig.height=3}
 weeks = tibble(
-  week.start = seq(DSC_START, floor_date(now(), "month"), by = "1 week"), 
+  week.start = seq(as_date(DSC_START), as_date(floor_date(now(), "week")), by = "1 week"), 
   i = 1
 )
 p = dsc.shortages %>%
   mutate(i = 1) %>%
   full_join(weeks, by = "i") %>%
-  filter(week.start %within% interval(actual_start_date, end_date_no_na)) %>%
+  filter(week.start %within% interval(actual_start_date, end_date_no_na))%>%
   group_by(week.start) %>%
   summarize(n = n()) %>%
-  ggplot( aes(x = week.start, y = n)) + 
-  geom_point() + #geom_line() + 
-  expand_limits(y=0) + 
+  mutate(week = week.start) %>%
+  ggplot( aes(x = week, y = n)) + 
+  geom_point() +
+  #expand_limits(y=0) + 
   labs(x = NULL, y = NULL)
 ggplotly(p)
 ```
@@ -268,12 +269,32 @@ p
 COVID-19
 ========
 
+Row {data-height=300} 
+----------------------------------
+### Monthly shortage by reason {data-width=300}
+```{r, fig.height=5, fig.width=3}
+p = dsc.shortages %>%
+  transmute(started = as_date(floor_date(actual_start_date, "month")), 
+            reason = reason) %>%  
+  filter(started >= ymd('2019-10-01'), started < now()) %>%
+  count(started, reason) %>%
+  group_by(started) %>%
+  mutate(percent = round(n / sum(n) * 100, 1)) %>%
+  transmute(interval_start = started, percent, reason) %>%
+  ggplot(aes(x = interval_start, y = percent, fill=reason)) + 
+  geom_bar(stat='identity') + 
+  labs(x=NULL, y="% of total") + 
+  theme(legend.position="bottom")
+ggplotly(p) %>% layout(legend = list(orientation = 'h', x=0, y=-.1))
+```
 
-### Shortages since March 2020
+Row 
+----------------------------------
+### Shortage reports since March 2020
 ```{r}
 dsc.shortages %>%
   mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date))) %>%
-  filter(start_date %within% interval("2020-03-01", "2020-03-31")) %>% 
+  filter(start_date >= ymd("2020-03-01")) %>% 
   arrange(dpd_atc_number) %>%
   mutate(duration = round((start_date %--% estimated_end_date)/days(1)),
          start_date = format(start_date, "%b %d, %Y"),
@@ -287,22 +308,6 @@ dsc.shortages %>%
   DT::formatStyle("start_date", "white-space"="nowrap")
 ```
 
-### Shortage reasons, aggregated weekly {data-width=150}
-```{r, fig.height=10, fig.width=3}
-p = dsc.shortages %>%
-  transmute(started = floor_date(actual_start_date, "week"), 
-            reason = reason) %>%  
-  filter(started > ymd('2020-01-01'), started < now()) %>%
-  count(started, reason) %>%
-  group_by(started) %>%
-  mutate(percent = round(n / sum(n) * 100, 1)) %>%
-  transmute(week_started = started, percent, reason) %>%
-  ggplot(aes(x = week_started, y = percent)) + 
-  geom_bar(stat='identity') + 
-  labs(x=NULL, y="% of total") + 
-  facet_wrap(~reason, ncol=1, strip.position="bottom")
-ggplotly(p)
-```
 
 About
 =====
