@@ -134,8 +134,8 @@ dsc.discontinuations = dsc %>% filter(type.label == "discontinuance")
 
 this_year = interval(floor_date(now(), "year"), ceiling_date(now(), "year"))
 week_start = floor_date(now(), "week")
-this_week = interval(week_start, week_start + weeks(1))
-next_week = int_shift(this_week, by = weeks(1))
+this_week = interval(week_start, week_start + dweeks(1))
+next_week = int_shift(this_week, by = dweeks(1))
 ```
 
 Shortages
@@ -156,7 +156,7 @@ valueBox(shortages,
          color = ifelse(shortages>0, "warning", "primary"))
 ```
 
-### New shortages this week
+### New shortages expected this week
 ```{r}
 .shortages_this_week =  dsc.shortages %>% 
   filter(
@@ -194,7 +194,7 @@ Row
 options(knitr.kable.NA = '')
 
 dsc.shortages %>% 
-  mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date))) %>%
+  mutate(start_date = coalesce(actual_start_date, anticipated_start_date)) %>%
   filter(status %in% c("active_confirmed", "anticipated_shortage"), 
          start_date %within% interval(week_start, week_start + dweeks(2)))  %>%
   arrange(start_date) %>%
@@ -235,44 +235,6 @@ ggplotly(p)
 
 ### Causes of drug shortages this year {.no-padding}
 ```{r, fig.height=4, asp=0.6}
-p = dsc.shortages %>% 
-  filter(actual_start_date %within% this_year) %>% 
-  mutate(reason=fct_infreq(reason)) %>%
-  group_by(reason) %>%
-  summarize(shortages=n()) %>%
-  mutate(percent=shortages/sum(shortages)*100) %>% 
-  ggplot(aes(y=percent,fill=reason,hjust="left")) + 
-  xlim(1,4) + 
-  geom_bar(aes(x=2.5), width=.5,stat="identity") + 
-  geom_text(
-    aes(x=2.1, label = paste0(round(percent), "%")), 
-    position = position_stack(vjust = 0.5), 
-    size=4, 
-    check_overlap = T) +
-  geom_text(
-    aes(x=2.9, label = reason, angle=30), 
-    position = position_stack(vjust = .5), 
-    size=4, 
-    check_overlap = T) +
-  coord_flip() + 
-  labs(x=NULL,y=NULL,fill=NULL) + 
-  theme_classic() + 
-  theme(
-    legend.position = "none", 
-    text = element_text(size=15),
-    axis.line=element_blank(), 
-    axis.text=element_blank(), 
-    axis.ticks=element_blank()) 
-p
-```
-
-COVID-19
-========
-
-Row {data-height=300} 
-----------------------------------
-### Monthly shortage by reason {data-width=300}
-```{r, fig.height=5, fig.width=3}
 p = dsc.shortages %>%
   transmute(started = as_date(floor_date(actual_start_date, "month")), 
             reason = reason) %>%  
@@ -280,16 +242,17 @@ p = dsc.shortages %>%
   count(started, reason) %>%
   group_by(started) %>%
   mutate(percent = round(n / sum(n) * 100, 1)) %>%
-  transmute(interval_start = started, percent, reason) %>%
-  ggplot(aes(x = interval_start, y = percent, fill=reason)) + 
+  transmute(month = started, percent, reason) %>%
+  ggplot(aes(x = month, y = percent, fill=reason)) + 
   geom_bar(stat='identity') + 
   labs(x=NULL, y="% of total") + 
   theme(legend.position="bottom")
 ggplotly(p) %>% layout(legend = list(orientation = 'h', x=0, y=-.1))
 ```
 
-Row 
-----------------------------------
+COVID-19
+========
+
 ### Shortage reports since March 2020
 ```{r}
 dsc.shortages %>%
