@@ -213,7 +213,7 @@ dsc.shortages %>%
 Row {data-height=300} 
 ----------------------------------
 ### Drugs in shortage
-```{r, fig.height=3}
+```{r}
 weeks = tibble(
   week.start = seq(as_date(DSC_START), as_date(floor_date(now(), "week")), by = "1 week"), 
   i = 1
@@ -226,8 +226,7 @@ p = dsc.shortages %>%
   summarize(n = n()) %>%
   mutate(week = week.start) %>%
   ggplot( aes(x = week, y = n)) + 
-  geom_point() +
-  #expand_limits(y=0) + 
+  geom_line() + 
   labs(x = NULL, y = NULL)
 ggplotly(p)
 ```
@@ -253,6 +252,122 @@ ggplotly(p) %>% layout(legend = list(orientation = 'h', x=0, y=-.1))
 COVID-19
 ========
 
+```{r}
+.dpd_status_ordered = dpd$status %>%
+  group_by(DRUG_CODE) %>%
+  arrange(HISTORY_DATE, .by_group = T) %>%
+  mutate(.curr = 1:n(), .prev = .curr-1, .last = n()) %>%
+  ungroup()
+
+# complex join so that LHS has FROM status and RHS has TO status
+# Also includes pair when LHS is the most recent status and then RHS is ignored
+dpd_status_intervals = inner_join(.dpd_status_ordered, .dpd_status_ordered, by="DRUG_CODE") %>%
+  select(-starts_with("CURRENT"), -starts_with("LOT"), -starts_with("EXP")) %>%
+  filter(.prev.y == .curr.x | (.curr.x == .last.x & .curr.x == .curr.y)) %>%
+  transmute(
+    DRUG_CODE = DRUG_CODE, 
+    start_date = HISTORY_DATE.x,
+    end_date = if_else(.curr.x == .last.x, as_date(FAR_FUTURE), HISTORY_DATE.y), 
+    status = STATUS.x)
+
+# Map ATC code to NAME
+atc_codes = dpd$ther %>% transmute(dpd_atc_number = TC_ATC_NUMBER, atc_name = TC_ATC) %>% distinct()
+
+# date range to show 
+FROM = floor_date(ymd("2019-09-01"), "week")
+TO = as_date(now())
+BY = "1 week"  # warning: if the FROM-TO range is large (e.g. > 20 years), change BY to something larger, e.g. 3 months
+
+# now, for each month, let's compute the total number of drugs marketed, for each ATC code
+dpd.months = tibble(month.date = seq(FROM, TO, by=BY),  n = 1)
+
+dpd_num_marketed_by_atc = dpd_status_intervals %>% mutate(n=1) %>%
+  inner_join(dpd.months, by="n") %>%
+  filter(month.date %within% interval(start_date, end_date)) %>%
+  select(DRUG_CODE, status, month.date) %>%
+  inner_join(select(dpd$ther, DRUG_CODE, TC_ATC_NUMBER), by = "DRUG_CODE") %>%
+  group_by(month.date, TC_ATC_NUMBER) %>%
+  summarize(marketed = sum(status == "MARKETED"))
+
+dsc_num_shortages_by_atc = dsc.shortages %>%
+  mutate(n=1) %>%
+  inner_join(dpd.months, by="n") %>%
+  filter(month.date %within% interval(actual_start_date, end_date_no_na)) %>%
+  distinct(month.date, dpd_atc_number, din) %>%
+  group_by(month.date, dpd_atc_number) %>%
+  summarize(shortages = n())
+
+
+atc_plot = function(atc) {
+  shortages = dsc_num_shortages_by_atc %>%
+    filter(str_starts(dpd_atc_number, atc))
+  
+  marketed = dpd_num_marketed_by_atc  %>%
+    filter(str_starts(TC_ATC_NUMBER, atc))
+  
+  right_join(shortages, marketed, 
+             by = c("month.date" = "month.date", "dpd_atc_number" = "TC_ATC_NUMBER")) %>%
+    ungroup() %>%
+    mutate(shortages = replace_na(shortages, 0)) %>%
+    mutate(available = marketed - shortages) %>%
+    group_by(month.date) %>%
+    summarize(Available = sum(available), Marketed = sum(marketed)) %>%
+    pivot_longer(cols = Available:Marketed, names_to = "status", values_to = "count") %>%
+    ggplot(aes(x = month.date, y = count, linetype = fct_rev(status))) +
+    geom_line()  + 
+    labs(x=NULL, y = "# of DINs", 
+         linetype = NULL) + 
+    expand_limits(y=0)  + 
+    theme(legend.position="bottom")
+}
+
+atc_group_plot = function(atc) {
+  shortages = dsc_num_shortages_by_atc %>%
+    filter(str_starts(dpd_atc_number, atc))
+  
+  marketed = dpd_num_marketed_by_atc  %>%
+    filter(str_starts(TC_ATC_NUMBER, atc))
+  
+  right_join(shortages, marketed, 
+             by = c("month.date" = "month.date", "dpd_atc_number" = "TC_ATC_NUMBER")) %>%
+    ungroup() %>%
+    mutate(shortages = replace_na(shortages, 0)) %>%
+    mutate(available = marketed - shortages) %>%
+    group_by(month.date, dpd_atc_number) %>%
+    summarize(Available = sum(available), Marketed = sum(marketed)) %>%
+    ungroup() %>%
+    group_by(dpd_atc_number) %>%
+    filter(sum(Available - Marketed) < 0) %>%
+    left_join(atc_codes) %>%
+    pivot_longer(cols = Available:Marketed, names_to = "status", values_to = "count") %>%
+    ggplot(aes(x = month.date, y = count, linetype = fct_rev(status))) +
+      geom_line()  + 
+      labs(x=NULL, y = "# of DINs", linetype = NULL) + 
+      expand_limits(y=0) +
+    facet_wrap(~atc_name) + 
+    theme(legend.position="bottom")
+}
+```
+
+Row {data-height=300} 
+------------------------------------- 
+### Respiratory Beta Agonists (R03AC)
+```{r}
+atc_group_plot("R03AC")
+```
+
+### Anesthetics (N01A-)
+```{r}
+atc_group_plot("N01A")
+```
+
+### Quinolones (P01BA-)
+```{r}
+atc_group_plot("P01BA") 
+```
+
+Row 
+-----------------------------------------------------------
 ### Shortage reports since March 2020
 ```{r}
 dsc.shortages %>%
