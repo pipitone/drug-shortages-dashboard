@@ -4,6 +4,7 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     source_code: embed
+    self_contained: false
 ---
 
 ```{r setup, include=FALSE}

@@ -7,5 +7,6 @@ cd $SCRIPTDIR;
   echo "Begin: $(date)";
   Rscript -e "options('dsc_download'=T, 'dpd_download'=T); rmarkdown::render('dashboard.Rmd', quiet=T)";
   rsync -a dashboard.html pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/index.html;
+  rsync -a dashboard_files pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/;
   echo "End: $(date)";
 } &>> run.log

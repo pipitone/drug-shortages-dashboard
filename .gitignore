@@ -8,3 +8,4 @@ data/
 *.html
 .Rprofile
 run.log
+dashboard_files/
