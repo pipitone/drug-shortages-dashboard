@@ -275,7 +275,7 @@ dpd_status_intervals = inner_join(.dpd_status_ordered, .dpd_status_ordered, by="
 atc_codes = dpd$ther %>% transmute(dpd_atc_number = TC_ATC_NUMBER, atc_name = TC_ATC) %>% distinct()
 
 # date range to show 
-FROM = floor_date(ymd("2019-09-01"), "week")
+FROM = floor_date(ymd("2019-11-01"), "week")
 TO = as_date(now())
 BY = "1 week"  # warning: if the FROM-TO range is large (e.g. > 20 years), change BY to something larger, e.g. 3 months
 
@@ -314,7 +314,7 @@ atc_plot = function(atc) {
     group_by(month.date) %>%
     summarize(Available = sum(available), Marketed = sum(marketed)) %>%
     pivot_longer(cols = Available:Marketed, names_to = "status", values_to = "count") %>%
-    ggplot(aes(x = month.date, y = count, linetype = fct_rev(status))) +
+    ggplot(aes(x = week, y = count, linetype = fct_rev(status))) +
     geom_line()  + 
     labs(x=NULL, y = "# of DINs", 
          linetype = NULL) + 
@@ -322,7 +322,8 @@ atc_plot = function(atc) {
     theme(legend.position="bottom")
 }
 
-atc_group_plot = function(atc) {
+atc_group_plot = function(atcs) {
+  atc = paste(atcs, collapse="|")
   shortages = dsc_num_shortages_by_atc %>%
     filter(str_starts(dpd_atc_number, atc))
   
@@ -339,41 +340,46 @@ atc_group_plot = function(atc) {
     ungroup() %>%
     group_by(dpd_atc_number) %>%
     filter(sum(Available - Marketed) < 0) %>%
+    mutate(percent_available = Available/max(Marketed)*100,
+           percent_marketed = Marketed/max(Marketed)*100) %>%
+    mutate(week = month.date) %>%
     left_join(atc_codes) %>%
-    pivot_longer(cols = Available:Marketed, names_to = "status", values_to = "count") %>%
-    ggplot(aes(x = month.date, y = count, linetype = fct_rev(status))) +
-      geom_line()  + 
-      labs(x=NULL, y = "# of DINs", linetype = NULL) + 
-      expand_limits(y=0) +
-    facet_wrap(~atc_name) + 
-    theme(legend.position="bottom")
+    ggplot(aes(x = week, y = percent_available, fill=atc_name)) +
+    geom_area()  + 
+    scale_x_date(date_breaks="2 month", 
+                 date_labels="%b, %Y", 
+                 minor_breaks=NULL) + 
+    scale_y_continuous(breaks =c(0,50,100)) + 
+    facet_wrap(~atc_name, ncol=1, strip.position = "right") + 
+    theme(legend.position="none", 
+          strip.text.y = element_text(angle=0)
+          )
 }
 ```
 
+
 Row {data-height=300} 
 ------------------------------------- 
-### Respiratory Beta Agonists (R03AC)
+### COVID-19 Indicator Medicines {data-width=150}
+The figure below shows the medications from a list of medicines we are tracking to assess for COVID-related shortages. The figure shows medicines which have had shortages since November 2019.
+
 ```{r}
-atc_group_plot("R03AC")
+covid_meds = tibble(
+  ATC =   c("R03AC", "N01A", "P01BA", "N02BE01"),
+  Description = c("Respiratory Beta Agonists",  "Anesthetics",  "Quinolones", "Acetaminophen (Paracetamol)")
+)
+kable(covid_meds) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+    full_width=T) 
 ```
 
-### Anesthetics (N01A-)
-```{r}
-atc_group_plot("N01A")
-```
 
-### Quinolones (P01BA-)
-```{r}
-atc_group_plot("P01BA") 
-```
-
-Row 
------------------------------------------------------------
-### Shortage reports since March 2020
+### Searchable list of shortage reports since February, 2020
 ```{r}
 dsc.shortages %>%
   mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date))) %>%
-  filter(start_date >= ymd("2020-03-01")) %>% 
+  filter(start_date >= ymd("2020-02-01")) %>% 
   arrange(dpd_atc_number) %>%
   mutate(duration = round((start_date %--% estimated_end_date)/days(1)),
          start_date = format(start_date, "%b %d, %Y"),
@@ -385,6 +391,20 @@ dsc.shortages %>%
                                          rowid = FALSE), 
                 colnames = c("ATC", "Drug Name", "Dose", "Company", "Status", "Start", "Duration (days)", "Reason", "View report")) %>%
   DT::formatStyle("start_date", "white-space"="nowrap")
+```
+
+Row 
+-----------------------------------------------------------
+
+### Availability of COVID-19 Indicator medications  
+```{r, fig.width=15, fig.height=4}
+# ggplotly(atc_group_plot("R03AC"))
+p = atc_group_plot(covid_meds$ATC)
+p1 = p + geom_vline(xintercept=ymd("2020-01-15"), linetype=1) + 
+    geom_vline(xintercept=ymd("2020-03-9"), linetype=1, colour="red") + 
+    labs(x=NULL, y = "% available (by DIN)", 
+         caption="Black line indicates first COVID-19 case in canada, red line indicates first death")  
+p1
 ```
 
 
