@@ -61,8 +61,7 @@ dsc.orig = read_csv(DSC_PATH, trim_ws = T, col_types = cols(
     ) 
   ) %>%
   mutate(
-    end_date_no_na = coalesce(actual_end_date, estimated_end_date, FAR_FUTURE), 
-    start_date_no_na = coalesce(actual_start_date, anticipated_start_date, FAR_PAST))
+    end_date_no_na = coalesce(actual_end_date, FAR_FUTURE))
 
 ## Parsual EML
 # https://dx.doi.org/10.9778%2Fcmajo.20160122
@@ -145,16 +144,11 @@ Shortages
 Row {data-height=125}
 --------------------------------
 
-### Active shortages this week
+### Active shortages
 ```{r}
-.active_shortages = dsc.shortages %>% 
-  filter(
-    status == "active_confirmed", 
-    now() %within% interval(actual_start_date, end_date_no_na))
-shortages = nrow(.active_shortages)
-valueBox(shortages, 
+valueBox(dsc %>%  filter(status == "active_confirmed") %>% count() %>% pull(), 
          icon="fa-capsules", 
-         color = ifelse(shortages>0, "warning", "primary"))
+         color = "warning")
 ```
 
 ### New shortages expected this week
@@ -416,19 +410,34 @@ Column
 
 ### About this website
 
-Hello. I am Jon Pipitone, medical student at Queen's University, Kingston, Ontario, Canada.
+Hello. I am Jon Pipitone, medical student at Queen's University, Kingston,
+Ontario, Canada. This dashboard is my attempt to show interesting trends and
+summaries of Canadian drug shortage reports. Code for this website can be found
+on [github](https://github.com/pipitone/drug-shortages-dashboard).
 
-This website is a dashboard to display my ongoing research into drug shortages in Canada. You can follow my progress on my blog https://jon.pipitone.ca/blog. 
+Much of this work has been done in collaboration with [Dr. Jacalyn
+Duffin](https://jacalynduffin.ca/), who has a her own site dedicated to
+analysis of the canadian drug shortages: https://canadadrugshortage.ca. 
 
-This work is done under supervision by [Dr. Jacalyn Duffin](https://jacalynduffin.ca/), and is an extension of our earlier analysis: 
+We published a peer-reviwed paper in 2018 on this issue:
 
-*Donelle, Jessy, Jacalyn Duffin, Jonathan Pipitone, and Brian White-Guay. “Assessing Canada’s Drug Shortage Problem.” CD Howe Institute Commentary 515, 2018. https://doi.org/10.2139/ssrn.3192558.*
+*Donelle, Jessy, Jacalyn Duffin, Jonathan Pipitone, and Brian White-Guay.
+“Assessing Canada’s Drug Shortage Problem.” CD Howe Institute Commentary 515,
+2018. https://doi.org/10.2139/ssrn.3192558.*
 
-All of the code that powers this site, and other goodies can be found at https://github.com/pipitone/drug-shortages
+I also keep [a blog](https://jon.pipitone.ca/blog) and I sometimes discuss drug
+shortages.
 
-*Disclaimer:* As this is ongoing research, the analysis and results presented here is likely to change, and has not undergone any peer review. 
+Questions, comments, requests? Please send email to drugshortages@pipitone.ca.
 
-Questions or comments? Please send me an email at jon@pipitone.ca
+### FAQ 
+
+1. Why are there different totals "active shortages" and on the "drugs in shortage" graph?
+
+    In short, it's because there is missing or incorrect data in some of the
+shortage reports that means they get excluded from historical counts. I've
+written [a blog post about it](https://jon.pipitone.ca/blog/2020-04-18-how-many-drug-shortages-are-there/).
+
 
 Column  {data-width=100}
 ----------------------------
@@ -445,11 +454,3 @@ present. Manufacturers are required to report.
 Database of historical records of drug products in Canada. Maintained by Health Canada.
 
 ##### [CLEANMeds Essential Medicines List](https://cleanmeds.ca)
-
-### Terminology
-**DSC**: Drug Shortages Canada database
-
-**DPD**: Health Canada's Drug Products Database
-
-**ATC**: Anatomical Therapeutic Chemical Classification system
-
