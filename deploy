@@ -1,12 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 SCRIPTDIR="$(dirname "${0}")"
+export PATH=$HOME/.local/bin:$PATH
 
 cd $SCRIPTDIR;
 {
   echo "Begin: $(date)";
   Rscript -e "options('dsc_download'=T, 'dpd_download'=T); rmarkdown::render('dashboard.Rmd', quiet=T)";
-  rsync -a dashboard.html pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/index.html;
-  rsync -a dashboard_files pipitone.ca:websites/projects.jon.pipitone.ca/drug-shortages/;
+  rsync -a dashboard.html pipitone.ca:websites/drugshortages.pipitone.ca/index.html;
+  rsync -a dashboard_files pipitone.ca:websites/drugshortages.pipitone.ca/;
   echo "End: $(date)";
 } &>> run.log
