@@ -333,18 +333,18 @@ atc_group_plot = function(atcs) {
     summarize(Available = sum(available), Marketed = sum(marketed)) %>%
     ungroup() %>%
     group_by(dpd_atc_number) %>%
-    filter(sum(Available - Marketed) < 0) %>%
-    mutate(percent_available = Available/max(Marketed)*100,
-           percent_marketed = Marketed/max(Marketed)*100) %>%
+    filter(sum(Marketed-Available) > 0, Available > 0) %>%
+    mutate(percent_available = Available/max(Available)*100) %>%
     mutate(week = month.date) %>%
-    left_join(atc_codes) %>%
-    ggplot(aes(x = week, y = percent_available, fill=atc_name)) +
+    left_join(atc_codes, by="dpd_atc_number") %>%
+    mutate(name_and_atc = paste0(atc_name, ' [', dpd_atc_number, ']')) %>%
+    ggplot(aes(x = week, y = Available, fill=name_and_atc)) +
     geom_area()  + 
     scale_x_date(date_breaks="2 month", 
                  date_labels="%b, %Y", 
                  minor_breaks=NULL) + 
-    scale_y_continuous(breaks =c(0,50,100)) + 
-    facet_wrap(~atc_name, ncol=1, strip.position = "right") + 
+    scale_y_continuous(breaks=scales::breaks_extended(3)) + 
+    facet_wrap(~name_and_atc, ncol=2, strip.position = "right", scales="free_y") + 
     theme(legend.position="none", 
           strip.text.y = element_text(angle=0)
           )
@@ -352,23 +352,47 @@ atc_group_plot = function(atcs) {
 ```
 
 
-Row {data-height=300} 
+Row
 ------------------------------------- 
-### COVID-19 Indicator Medicines {data-width=150}
-The figure below shows the medications from a list of medicines we are tracking to assess for COVID-related shortages. The figure shows medicines which have had shortages since November 2019.
+### COVID-19 Indicator Medicines {data-width=300}
+The figure below shows the medications from a list of medicines we are tracking to assess for COVID-related shortages:
 
 ```{r}
+# To add: propofol, rocuronium, cisatracurium, ketamine, midazolam, norepinephrine, phenylephrine, fentanyl
 covid_meds = tibble(
-  ATC =   c("R03AC", "N01A", "P01BA", "N02BE01"),
-  Description = c("Respiratory Beta Agonists",  "Anesthetics",  "Quinolones", "Acetaminophen (Paracetamol)")
+  ATC =   c("R03AC", "N01A", "P01BA", 
+            "N02BE01",  "M03AC", "N05CD", 
+            "C01CA"),
+  Description = c("Respiratory Beta Agonists",  "Anesthetics (includes opioid, ketamines)",  "Quinolones", 
+                  "Acetaminophen (Paracetamol)",  "Muscle relaxants (e.g. paralytics)", "Benzodiazepines", 
+                  "Adrenergics")
 )
-kable(covid_meds) %>%
+kable(covid_meds %>% arrange(ATC)) %>%
   kable_styling(
     bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
     full_width=T) 
 ```
 
+### Availability of COVID-19 Indicator medications  
+```{r, fig.width=15, fig.height=4}
+p = atc_group_plot(covid_meds$ATC)
+p1 = p + 
+    geom_vline(xintercept=as.numeric(ymd("2020-01-15")), linetype=1) + 
+    geom_vline(xintercept=as.numeric(ymd("2020-03-09")), linetype=1, colour="red") + 
+    labs(x=NULL, y = "# DIN available") 
+p1_ly = ggplotly(p1) %>% 
+  layout(annotations = list(x = 1, y = -0.06, xref="paper", yref="paper", 
+                            xanchor="right", yanchor="bottom", xshift=0, yshift=0, 
+                            font=list(size=10), showarrow=F,
+                            text="Black line indicates first COVID-19 case in canada, red line indicates first death"))  
+p1_ly
+```
 
+Search
+======
+
+Row 
+------------------------------------- 
 ### Searchable list of shortage reports since February, 2020
 ```{r}
 dsc.shortages %>%
@@ -385,20 +409,6 @@ dsc.shortages %>%
                                          rowid = FALSE), 
                 colnames = c("ATC", "Drug Name", "Dose", "Company", "Status", "Start", "Duration (days)", "Reason", "View report")) %>%
   DT::formatStyle("start_date", "white-space"="nowrap")
-```
-
-Row 
------------------------------------------------------------
-
-### Availability of COVID-19 Indicator medications  
-```{r, fig.width=15, fig.height=4}
-# ggplotly(atc_group_plot("R03AC"))
-p = atc_group_plot(covid_meds$ATC)
-p1 = p + geom_vline(xintercept=ymd("2020-01-15"), linetype=1) + 
-    geom_vline(xintercept=ymd("2020-03-9"), linetype=1, colour="red") + 
-    labs(x=NULL, y = "% available (by DIN)", 
-         caption="Black line indicates first COVID-19 case in canada, red line indicates first death")  
-p1
 ```
 
 
