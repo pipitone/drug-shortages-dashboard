@@ -316,6 +316,15 @@ atc_plot = function(atc) {
     theme(legend.position="bottom")
 }
 
+integer_breaks <- function(n = 5, ...) { 
+  function(x) { 
+    breaks = floor(pretty(x, n, ...))
+    names(breaks) = attr(breaks, "labels")
+    breaks
+  }
+}
+
+
 atc_group_plot = function(atcs) {
   atc = paste(atcs, collapse="|")
   shortages = dsc_num_shortages_by_atc %>%
@@ -343,7 +352,7 @@ atc_group_plot = function(atcs) {
     scale_x_date(date_breaks="2 month", 
                  date_labels="%b, %Y", 
                  minor_breaks=NULL) + 
-    scale_y_continuous(breaks=scales::breaks_extended(3)) + 
+    scale_y_continuous(breaks=integer_breaks(3)) + 
     facet_wrap(~name_and_atc, ncol=2, strip.position = "right", scales="free_y") + 
     theme(legend.position="none", 
           strip.text.y = element_text(angle=0)
@@ -360,10 +369,10 @@ The figure below shows the medications from a list of medicines we are tracking 
 ```{r}
 # To add: propofol, rocuronium, cisatracurium, ketamine, midazolam, norepinephrine, phenylephrine, fentanyl
 covid_meds = tibble(
-  ATC =   c("R03AC", "N01A", "P01BA", 
+  ATC =   c("R03AC", "N01A", "P01BA02", 
             "N02BE01",  "M03AC", "N05CD", 
             "C01CA"),
-  Description = c("Respiratory Beta Agonists",  "Anesthetics (includes opioid, ketamines)",  "Quinolones", 
+  Description = c("Respiratory Beta Agonists",  "Anesthetics (includes opioid, ketamines)",  "Hydroxychloroquine", 
                   "Acetaminophen (Paracetamol)",  "Muscle relaxants (e.g. paralytics)", "Benzodiazepines", 
                   "Adrenergics")
 )
@@ -373,7 +382,7 @@ kable(covid_meds %>% arrange(ATC)) %>%
     full_width=T) 
 ```
 
-### Availability of COVID-19 Indicator medications  
+### Availability of COVID-19 indicator medications since November 2019
 ```{r, fig.width=15, fig.height=4}
 p = atc_group_plot(covid_meds$ATC)
 p1 = p + 
@@ -442,7 +451,7 @@ Questions, comments, requests? Please send email to drugshortages@pipitone.ca.
 
 ### FAQ 
 
-1. Why are there different totals "active shortages" and on the "drugs in shortage" graph?
+1. Why are there different totals listed under "active shortages" and on the "drugs in shortage" graph?
 
     In short, it's because there is missing or incorrect data in some of the
 shortage reports that means they get excluded from historical counts. I've
