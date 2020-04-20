@@ -179,33 +179,7 @@ valueBox(nrow(.active_disconts), icon="fa-ban")
 valueBox(nrow(.emls_with_shortages), icon="fa-ambulance")
 ```
 
-
-
-Row
------------------------------------------------------------------------
-
-### Upcoming new and anticipated shortages
-```{r}
-options(knitr.kable.NA = '')
-
-dsc.shortages %>% 
-  mutate(start_date = coalesce(actual_start_date, anticipated_start_date)) %>%
-  filter(status %in% c("active_confirmed", "anticipated_shortage"), 
-         start_date %within% interval(week_start, week_start + dweeks(2)))  %>%
-  arrange(start_date) %>%
-  mutate(duration = round((start_date %--% estimated_end_date)/days(1)),
-         start_date = format(start_date, "%b %d, %Y"),
-         status = fct_recode(status, "Active" = "active_confirmed", "Anticipated" = "anticipated_shortage"), 
-         link = text_spec(id, link=paste0("https://www.drugshortagescanada.ca/shortage/", id))) %>%
-  select(en_drug_brand_name, drug_strength, status, start_date, duration, reason, link) %>%
-  kable(col.names = c("Drug Name", "Dose", "Status", "Start", "Duration (days)", "Reason", "View report"), escape=F) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
-    full_width=F) %>%
-    column_spec(3, width="9em")
-```
-
-Row {data-height=300} 
+Row  
 ----------------------------------
 ### Drugs in shortage
 ```{r}
@@ -239,13 +213,47 @@ p = dsc.shortages %>%
   transmute(month = started, percent, reason) %>%
   ggplot(aes(x = month, y = percent, fill=reason)) + 
   geom_bar(stat='identity') + 
+  scale_x_date(date_breaks="1 month", 
+               date_labels="%b, %Y") +
   labs(x=NULL, y="% of total") + 
   theme(legend.position="bottom")
 ggplotly(p) %>% layout(legend = list(orientation = 'h', x=0, y=-.1))
 ```
 
-COVID-19
-========
+
+Row
+-----------------------------------------------------------------------
+
+### New shortages per week since 2018
+```{r}
+p = dsc.shortages %>%
+  mutate(started = as_date(floor_date(actual_start_date, "week"))) %>%
+  filter(started >= ymd('2018-01-01'), started < now()) %>%
+  ggplot(aes(x=started)) + 
+  geom_bar() + 
+  scale_x_date(date_breaks = "4 month", 
+               date_minor_breaks = "1 month", 
+               date_labels = "%b, %Y") +  
+  labs(x=NULL, y=NULL)
+ ggplotly(p) 
+```
+
+### Shortage durations
+```{r}
+p = dsc.shortages %>% 
+  filter(actual_start_date >= ymd("2018-01-01")) %>%
+  mutate(duration = (actual_end_date - coalesce(actual_start_date, estimated_end_date))/dweeks(1), 
+         month_str=floor_date(actual_start_date, unit="year")) %>%
+  filter(!is.na(duration), duration > 0) %>%
+  ggplot(aes(x=duration)) +
+  geom_histogram(binwidth=4) +
+  facet_wrap(~factor(month_str), nrow=1, labeller = as_labeller(function(x) format.Date(x, "%Y"))) + 
+  labs(x="Duration (weeks)", y="# of shortages")
+ggplotly(p)
+```
+
+COVID-19 {data-orientation=columns}
+=======================================
 
 ```{r}
 .dpd_status_ordered = dpd$status %>%
@@ -361,11 +369,12 @@ atc_group_plot = function(atcs) {
 ```
 
 
-Row
+Column  {data-width=400}
 ------------------------------------- 
-### COVID-19 Indicator Medicines {data-width=300}
-The figure to the right shows the medications from a list of medicines we are
-tracking to assess for COVID-related shortages:
+
+### COVID-19 Indicator Medicines
+We are tracking the following list of medications to assess for COVID-related
+shortages:
 
 ```{r}
 # To add: propofol, rocuronium, cisatracurium, ketamine, midazolam, norepinephrine, phenylephrine, fentanyl
@@ -383,8 +392,11 @@ kable(covid_meds %>% arrange(ATC)) %>%
     full_width=T) 
 ```
 
-### Availability of COVID-19 indicator medications since November 2019
-```{r, fig.width=15, fig.height=4}
+Column {.tabset}
+-----------------------------------------------------
+
+### Availability
+```{r}
 p = atc_group_plot(covid_meds$ATC)
 p1 = p + 
     geom_vline(xintercept=as.numeric(ymd("2020-01-15")), linetype=1) + 
@@ -397,6 +409,9 @@ p1_ly = ggplotly(p1) %>%
                             text="Black line indicates first COVID-19 case in canada, red line indicates first death"))  
 p1_ly
 ```
+This chart shows the availability of COVID-19 indicator medications since November 2019. 
+The black line indicates first COVID-19 case in Canada (Jan 15, 2020), and the
+red line indicates first death (Mar 09, 2020).
 
 Search
 ======
@@ -406,21 +421,29 @@ Row
 ### Searchable list of shortage reports since February, 2020
 ```{r}
 dsc.shortages %>%
-  mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date))) %>%
+  mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date)),) %>%
   filter(start_date >= ymd("2020-02-01")) %>% 
-  arrange(dpd_atc_number) %>%
-  mutate(duration = round((start_date %--% estimated_end_date)/days(1)),
-         start_date = format(start_date, "%b %d, %Y"),
-         status = fct_recode(status, "Active" = "active_confirmed", "Anticipated" = "anticipated_shortage"),
+  arrange(start_date) %>%
+  mutate(drug_name = if_else(str_length(en_drug_brand_name) > 30, paste0(substring(en_drug_brand_name, 0, 30), '...'), en_drug_brand_name), 
+         company_name = str_to_title(company_name), 
+         duration = round((start_date %--% estimated_end_date)/days(1)),
+         status = fct_recode(status, 
+                             "Active" = "active_confirmed", 
+                             "Anticipated" = "anticipated_shortage", 
+                             "Avoided" = "avoided_shortage", 
+                             "Resolved" = "resolved"),
          link = text_spec(id, link=paste0("https://www.drugshortagescanada.ca/shortage/", id))) %>%
-  select(dpd_atc_number, en_drug_brand_name, drug_strength, company_name, status, start_date, duration, reason, link) %>%
-  DT::datatable(escape=F, options = list(bPaginate = FALSE, 
-                                         autoWidth = FALSE,
-                                         rowid = FALSE), 
+  select(dpd_atc_number, drug_name, drug_strength, company_name, status, start_date, duration, reason, link) %>%
+  DT::datatable(escape=F, 
+                rownames=F,
+                options = list(bPaginate = FALSE, 
+                               autoWidth = T,
+                               rowid = FALSE, 
+                               order=list(list(6, "asc"), list(5,"asc"))), 
                 colnames = c("ATC", "Drug Name", "Dose", "Company", "Status", "Start", "Duration (days)", "Reason", "View report")) %>%
-  DT::formatStyle("start_date", "white-space"="nowrap")
+  DT::formatStyle("start_date", "white-space"="nowrap") %>%
+  DT::formatStyle("reason", "white-space"="nowrap") 
 ```
-
 
 About
 =====
@@ -458,19 +481,24 @@ Questions, comments, requests? Please send email to drugshortages@pipitone.ca.
 shortage reports that means they get excluded from historical counts. I've
 written [a blog post about it](https://jon.pipitone.ca/blog/2020-04-18-how-many-drug-shortages-are-there/).
 
+1. How often is the dashboard updated? 
+
+    Daily. It was last updated `r now()`. 
 
 Column  {data-width=100}
 ----------------------------
 
 ### Data sources
 
-Last updated: `r now()`
-
 ##### [drugshortagescanada.ca](https://www.drugshortagescanada.ca)
 Database of shortage and discontinuation reports.  Active from March 2017 to
 present. Manufacturers are required to report.
 
+Last updated: `r now()`
+
 ##### [Drug Product Database](https://www.canada.ca/en/health-canada/services/drugs-health-products/drug-products/drug-product-database.html)
 Database of historical records of drug products in Canada. Maintained by Health Canada.
+
+Last updated: `r now()`
 
 ##### [CLEANMeds Essential Medicines List](https://cleanmeds.ca)
