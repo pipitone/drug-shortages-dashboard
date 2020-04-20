@@ -364,7 +364,8 @@ atc_group_plot = function(atcs) {
 Row
 ------------------------------------- 
 ### COVID-19 Indicator Medicines {data-width=300}
-The figure below shows the medications from a list of medicines we are tracking to assess for COVID-related shortages:
+The figure to the right shows the medications from a list of medicines we are
+tracking to assess for COVID-related shortages:
 
 ```{r}
 # To add: propofol, rocuronium, cisatracurium, ketamine, midazolam, norepinephrine, phenylephrine, fentanyl
