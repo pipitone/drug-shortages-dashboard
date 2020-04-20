@@ -369,7 +369,7 @@ atc_group_plot = function(atcs) {
 ```
 
 
-Column  {data-width=400}
+Column  {data-width=150}
 ------------------------------------- 
 
 ### COVID-19 Indicator Medicines
@@ -381,10 +381,10 @@ shortages:
 covid_meds = tibble(
   ATC =   c("R03AC", "N01A", "P01BA02", 
             "N02BE01",  "M03AC", "N05CD", 
-            "C01CA"),
+            "C01CA", "J05AR10"),
   Description = c("Respiratory Beta Agonists",  "Anesthetics (includes opioid, ketamines)",  "Hydroxychloroquine", 
                   "Acetaminophen (Paracetamol)",  "Muscle relaxants (e.g. paralytics)", "Benzodiazepines", 
-                  "Adrenergics")
+                  "Adrenergics",  "Kaletra (anti-viral)")
 )
 kable(covid_meds %>% arrange(ATC)) %>%
   kable_styling(
@@ -395,7 +395,8 @@ kable(covid_meds %>% arrange(ATC)) %>%
 Column {.tabset}
 -----------------------------------------------------
 
-### Availability
+### Availability {data-padding=30}
+This chart shows the availability of COVID-19 indicator medications since November 2019. 
 ```{r}
 p = atc_group_plot(covid_meds$ATC)
 p1 = p + 
@@ -409,20 +410,18 @@ p1_ly = ggplotly(p1) %>%
                             text="Black line indicates first COVID-19 case in canada, red line indicates first death"))  
 p1_ly
 ```
-This chart shows the availability of COVID-19 indicator medications since November 2019. 
-The black line indicates first COVID-19 case in Canada (Jan 15, 2020), and the
-red line indicates first death (Mar 09, 2020).
+
 
 Search
 ======
 
 Row 
 ------------------------------------- 
-### Searchable list of shortage reports since February, 2020
+### Searchable list of shortage reports since January, 2020
 ```{r}
 dsc.shortages %>%
   mutate(start_date = date(coalesce(actual_start_date, anticipated_start_date)),) %>%
-  filter(start_date >= ymd("2020-02-01")) %>% 
+  filter(start_date %within% interval(ymd("2020-01-01"), now()+dweeks(4))) %>% 
   arrange(start_date) %>%
   mutate(drug_name = if_else(str_length(en_drug_brand_name) > 30, paste0(substring(en_drug_brand_name, 0, 30), '...'), en_drug_brand_name), 
          company_name = str_to_title(company_name), 
@@ -435,14 +434,18 @@ dsc.shortages %>%
          link = text_spec(id, link=paste0("https://www.drugshortagescanada.ca/shortage/", id))) %>%
   select(dpd_atc_number, drug_name, drug_strength, company_name, status, start_date, duration, reason, link) %>%
   DT::datatable(escape=F, 
-                rownames=F,
+                filter="top",
+                rownames=T,
                 options = list(bPaginate = FALSE, 
                                autoWidth = T,
-                               rowid = FALSE, 
-                               order=list(list(6, "asc"), list(5,"asc"))), 
+                               rowid = F, 
+                               search = list(regex = T), 
+                               order=list(list(6, "desc"), list(5,"asc"))), 
                 colnames = c("ATC", "Drug Name", "Dose", "Company", "Status", "Start", "Duration (days)", "Reason", "View report")) %>%
   DT::formatStyle("start_date", "white-space"="nowrap") %>%
-  DT::formatStyle("reason", "white-space"="nowrap") 
+  DT::formatStyle("drug_name", "white-space"="nowrap") %>%
+  DT::formatStyle("reason", "white-space"="nowrap") %>%
+  DT::formatStyle('status', color = DT::styleEqual(c('Anticipated', 'Active'), c('blue', 'green')))
 ```
 
 About
