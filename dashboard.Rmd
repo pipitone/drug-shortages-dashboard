@@ -196,6 +196,8 @@ p = dsc.shortages %>%
   mutate(week = week.start) %>%
   ggplot( aes(x = week, y = n)) + 
   geom_line() + 
+  scale_x_date(date_minor_breaks = "1 month", 
+               date_labels="%b %Y") + 
   labs(x = NULL, y = NULL)
 ggplotly(p)
 ```
@@ -214,7 +216,7 @@ p = dsc.shortages %>%
   ggplot(aes(x = month, y = percent, fill=reason)) + 
   geom_bar(stat='identity') + 
   scale_x_date(date_breaks="1 month", 
-               date_labels="%b, %Y") +
+               date_labels="%b %Y") +
   labs(x=NULL, y="% of total") + 
   theme(legend.position="bottom")
 ggplotly(p) %>% layout(legend = list(orientation = 'h', x=0, y=-.1))
@@ -231,9 +233,8 @@ p = dsc.shortages %>%
   filter(started >= ymd('2018-01-01'), started < now()) %>%
   ggplot(aes(x=started)) + 
   geom_bar() + 
-  scale_x_date(date_breaks = "4 month", 
-               date_minor_breaks = "1 month", 
-               date_labels = "%b, %Y") +  
+  scale_x_date(date_minor_breaks = "1 month", 
+               date_labels = "%b %Y") +  
   labs(x=NULL, y=NULL)
  ggplotly(p) 
 ```
@@ -358,7 +359,7 @@ atc_group_plot = function(atcs) {
     ggplot(aes(x = week, y = Available, fill=name_and_atc)) +
     geom_area()  + 
     scale_x_date(date_breaks="2 month", 
-                 date_labels="%b, %Y", 
+                 date_labels="%b %Y", 
                  minor_breaks=NULL) + 
     scale_y_continuous(breaks=integer_breaks(3)) + 
     facet_wrap(~name_and_atc, ncol=2, strip.position = "right", scales="free_y") + 
@@ -459,7 +460,10 @@ Column
 Hello. I am Jon Pipitone, medical student at Queen's University, Kingston,
 Ontario, Canada. This dashboard is my attempt to show interesting trends and
 summaries of Canadian drug shortage reports. Code for this website can be found
-on [github](https://github.com/pipitone/drug-shortages-dashboard).
+on [github](https://github.com/pipitone/drug-shortages-dashboard). This work is
+licensed under a <a rel="license"
+href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution
+4.0 International License</a>.
 
 Much of this work has been done in collaboration with [Dr. Jacalyn
 Duffin](https://jacalynduffin.ca/), who has a her own site dedicated to
