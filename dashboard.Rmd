@@ -229,10 +229,11 @@ Row
 ### New shortages per week since 2018
 ```{r}
 p = dsc.shortages %>%
-  mutate(started = as_date(floor_date(actual_start_date, "week"))) %>%
-  filter(started >= ymd('2018-01-01'), started < now()) %>%
-  ggplot(aes(x=started)) + 
-  geom_bar() + 
+  mutate(week = as_date(floor_date(actual_start_date, "week"))) %>%
+  filter(week >= ymd('2018-01-01'), week < now()) %>%
+  count(week) %>%
+  ggplot(aes(x=week, y=n)) + 
+  geom_bar(stat='identity') + 
   scale_x_date(date_minor_breaks = "1 month", 
                date_labels = "%b %Y") +  
   labs(x=NULL, y=NULL)
