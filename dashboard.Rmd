@@ -184,7 +184,8 @@ Row
 ### Drugs in shortage
 ```{r}
 weeks = tibble(
-  week.start = seq(as_date(DSC_START), as_date(floor_date(now(), "week")), by = "1 week"), 
+  week.start = seq(as_date(floor_date(DSC_START, "week")), 
+                   as_date(floor_date(now(), "week")), by = "1 week"), 
   i = 1
 )
 p = dsc.shortages %>%
