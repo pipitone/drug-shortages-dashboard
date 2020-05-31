@@ -415,7 +415,7 @@ href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution
 
 Much of this work has been done in collaboration with [Dr. Jacalyn
 Duffin](https://jacalynduffin.ca/), who has a her own site dedicated to
-analysis of the canadian drug shortages: https://canadadrugshortages.com. 
+analysis of the canadian drug shortages: https://canadadrugshortage.com. 
 
 We published a peer-reviwed paper in 2018 on this issue:
 
