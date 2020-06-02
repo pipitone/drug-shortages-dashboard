@@ -322,32 +322,59 @@ Column  {data-width=150}
 ------------------------------------- 
 
 ### COVID-19 Indicator Medicines
-We are tracking the following list of medications to assess for COVID-related
-shortages:
+We are tracking the following list of medications (and groups of medications) to
+assess for COVID-related shortages:
 
 ```{r}
 # To add: propofol, rocuronium, cisatracurium, ketamine, midazolam, norepinephrine, phenylephrine, fentanyl
-covid_meds = tibble(
-  ATC =   c("R03AC", "N01A", "P01BA02", 
-            "N02BE01",  "M03AC", "N05CD", 
-            "C01CA", "J05AR10"),
-  Description = c("Respiratory Beta Agonists",  "Anesthetics (includes opioid, ketamines)",  "Hydroxychloroquine", 
-                  "Acetaminophen (Paracetamol)",  "Muscle relaxants (e.g. paralytics)", "Benzodiazepines", 
-                  "Adrenergics",  "Kaletra (anti-viral)")
+covid_meds = tribble(
+  ~ATC,      ~Type,             ~Description,
+  "N01A",    "Anesthetic use",  "Anesthetics (includes opioid, ketamines)",  
+  "M03AC",   "Anesthetic use",  "Muscle relaxants (e.g. paralytics)", 
+  "M03AB01", "Anesthetic use",  "Succinylcholine (suxamethonium)",
+  "N05CD",   "Anesthetic use",  "Benzodiazepines", 
+  "C01CA",   "Anesthetic use",  "Adrenergics",  
+  "N05CM18", "Anesthetic use",  "Dexmedetomidine", 
+  "H01BA",   "Anesthetic use",  "Vasopressin and analogues",
+  "R03AC",   "Other",           "Respiratory Beta Agonists",  
+  "R01AA04", "Other",           "Phenylephrine (nasal)",
+  "C03CA01", "Other",           "Furosemide",
+  "C01BD01", "Other",	          "Amiodarone",
+  "J05AR10", "Other",           "Kaletra (anti-viral)", 
+  "P01BA02", "Other",           "Hydroxychloroquine", 
+  "N02BE01", "Other",           "Acetaminophen (Paracetamol)",  
 )
-kable(covid_meds %>% arrange(ATC)) %>%
+   
+kable(covid_meds %>% arrange(Type, ATC) %>% select(-Type)) %>%
   kable_styling(
     bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
     full_width=T) 
 ```
 
+The following charts shows the availability of COVID-19 indicator medications since November 2019. 
+Only medications (by ATC code) that have had a shortages will be shown. 
+
 Column {.tabset}
 -----------------------------------------------------
 
-### Availability {data-padding=30}
-This chart shows the availability of COVID-19 indicator medications since November 2019. 
+### Anesthetic Use {data-padding=30}
 ```{r}
-p = atc_group_plot(covid_meds$ATC)
+p = atc_group_plot(filter(covid_meds, Type == "Anesthetic use")$ATC)
+p1 = p + 
+    geom_vline(xintercept=as.numeric(ymd("2020-01-15")), linetype=1) + 
+    geom_vline(xintercept=as.numeric(ymd("2020-03-09")), linetype=1, colour="red") + 
+    labs(x=NULL, y = "# DIN available") 
+p1_ly = ggplotly(p1) %>% 
+  layout(annotations = list(x = 1, y = -0.06, xref="paper", yref="paper", 
+                            xanchor="right", yanchor="bottom", xshift=0, yshift=0, 
+                            font=list(size=10), showarrow=F,
+                            text="Black line indicates first COVID-19 case in canada, red line indicates first death"))  
+p1_ly
+```
+
+### Other Use {data-padding=30}
+```{r}
+p = atc_group_plot(filter(covid_meds, Type == "Other")$ATC)
 p1 = p + 
     geom_vline(xintercept=as.numeric(ymd("2020-01-15")), linetype=1) + 
     geom_vline(xintercept=as.numeric(ymd("2020-03-09")), linetype=1, colour="red") + 
